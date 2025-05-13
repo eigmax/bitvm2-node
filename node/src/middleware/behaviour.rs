@@ -47,10 +47,9 @@ pub fn get_topic_name(topic: &str) -> String {
     format!("{}/topic/{}", crate::env::get_proto_base(), topic)
 }
 
-pub fn split_topic_name<'a>(topic_hash: &'a str) -> (&'a str, &'a str) {
+pub fn split_topic_name(topic_hash: &str) -> (&str, &str) {
     topic_hash.split_once("/topic/").expect("should be $proto/topic/$actor")
 }
-
 
 #[cfg(test)]
 mod tests {
