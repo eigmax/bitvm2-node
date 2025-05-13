@@ -42,3 +42,24 @@ pub fn get_proto_name() -> StreamProtocol {
     let kad_proto = format!("/{protocol}/kad/{version}");
     StreamProtocol::try_from_owned(kad_proto).expect("Valid kad proto")
 }
+
+pub fn get_topic_name(topic: &str) -> String {
+    format!("{}/topic/{}", crate::env::get_proto_base(), topic)
+}
+
+pub fn split_topic_name<'a>(topic_hash: &'a str) -> (&'a str, &'a str) {
+    topic_hash.split_once("/topic/").expect("should be $proto/topic/$actor")
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_split_topic_name() {
+        let topic_short = "hello";
+        let topic_full = get_topic_name(topic_short);
+        let topic_split = split_topic_name(&topic_full);
+        assert_eq!(topic_split.1, topic_short);
+    }
+}

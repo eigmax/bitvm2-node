@@ -30,6 +30,7 @@ mod utils;
 use crate::action::{GOATMessage, GOATMessageContent, send_to_peer};
 use crate::env::{ENV_PEER_KEY, check_node_info, get_ipfs_url, get_local_node_info, get_network};
 use crate::middleware::behaviour::AllBehavioursEvent;
+use crate::middleware::split_topic_name;
 use crate::utils::save_local_info;
 use anyhow::Result;
 use middleware::AllBehaviours;
@@ -180,7 +181,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let topics = [Actor::Committee, Actor::Challenger, Actor::Operator, Actor::Relayer, Actor::All]
         .iter()
         .map(|a| {
-            let topic_name = format!("{}/topic/{a}", env::get_proto_base());
+            let topic_name = crate::middleware::get_topic_name(&a.to_string());
             let gossipsub_topic = gossipsub::IdentTopic::new(topic_name.clone());
             swarm.behaviour_mut().gossipsub.subscribe(&gossipsub_topic).unwrap();
             (topic_name, gossipsub_topic)
@@ -274,7 +275,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         }
                     };
 
-                    let topic_str = format!("{}/topic/{}", env::get_proto_base(), commands.0);
+                    let topic_str = crate::middleware::get_topic_name(commands.0);
                     if let Some(gossipsub_topic) = topics.get(&topic_str) {
                         let message = serde_json::to_vec(&GOATMessage{
                             actor: Actor::from_str(commands.0).unwrap(),
@@ -316,7 +317,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     }
                     SwarmEvent::Behaviour(AllBehavioursEvent::Gossipsub(gossipsub::Event::Subscribed { peer_id, topic})) => {
                         tracing::debug!("subscribing: {:?}, {:?}", peer_id, topic);
-                        let topic_limb = topic.as_str().split_once("/topic/").expect("should be $proto/topic/$actor");
+                        let topic_limb = split_topic_name(topic.as_str());//topic.as_str().split_once("/topic/").expect("should be $proto/topic/$actor");
                         if topic_limb.0 != env::get_proto_base() {
                            continue;
                         }
@@ -354,8 +355,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     SwarmEvent::NewExternalAddrOfPeer {peer_id, address} => {
                         tracing::debug!("new external address of peer: {} {}", peer_id, address);
                     }
-                    SwarmEvent::ConnectionEstablished {peer_id, connection_id, .. } => {
-                        tracing::debug!("connected to {peer_id}: {connection_id}");
+                    SwarmEvent::ConnectionEstablished {peer_id, connection_id, endpoint, .. } => {
+                        tracing::debug!("connected to {peer_id}: {connection_id}, endpoint: {:?}", endpoint);
                     }
                     e => {
                         tracing::debug!("Unhandled {:?}", e);
