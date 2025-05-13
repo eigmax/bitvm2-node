@@ -278,3 +278,7 @@ pub async fn goat_config_from_env() -> GoatInitConfig {
     };
     GoatInitConfig { rpc_url, gateway_address, private_key, chain_id }
 }
+
+pub fn get_proto_base() -> String {
+    std::env::var("PROTO_NAME").unwrap_or("bitvm2".to_string())
+}
